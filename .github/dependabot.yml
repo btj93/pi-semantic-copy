@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Pi is pinned on purpose; bump it together with TESTED_PI in src/index.ts.
+      - dependency-name: "@earendil-works/*"
+    groups:
+      dev:
+        dependency-type: development
