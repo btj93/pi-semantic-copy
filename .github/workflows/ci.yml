@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Weekly: catch a Pi release that changes the private internals this extension patches.
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  pinned:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+
+  latest-pi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save @earendil-works/pi-coding-agent@latest @earendil-works/pi-tui@latest
+      - run: npm ls @earendil-works/pi-coding-agent @earendil-works/pi-tui
+      - run: npm run check
+      - run: npm test
