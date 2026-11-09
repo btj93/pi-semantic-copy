@@ -21,7 +21,15 @@ export const settings: { mode: Mode } = { mode: "plain" };
 
 export function install(): string | undefined {
 	const proto = TuiAltScreen.prototype as any;
-	const missing = [...PATCHED, "getSelectionBounds", "getPrimaryScrollView", "copyTextToClipboard"].filter(
+	const missing = [
+		...PATCHED,
+		"getSelectionBounds",
+		"getPrimaryScrollView",
+		"getScrollSelectionPoint",
+		"copyTextToClipboard",
+		"clearTextSelection",
+		"hasOverlay",
+	].filter(
 		(name) => typeof (proto[ORIGINALS]?.[name] ?? proto[name]) !== "function",
 	);
 	if (missing.length) return `semantic-copy disabled: Pi internals changed (${missing.join(", ")})`;
@@ -45,9 +53,9 @@ export function install(): string | undefined {
 
 	proto.applySelection = function (this: any, screen: string[], layout = this.currentLayout) {
 		try {
-			screen = paintCursor(this, screen);
+			screen = paintCursor(this, screen, layout);
 			const sel: Sel | undefined = settings.mode === "off" ? undefined : this.getSelectionBounds();
-			const ctx = sel?.start.scrollView ? contextOf(this, sel.start.scrollView) : undefined;
+			const ctx = sel?.start.scrollView ? contextOf(this, sel.start.scrollView, layout) : undefined;
 			this.__semanticCopy = ctx && { ...ctx, sel, ranges: new Map() };
 			return originals.applySelection.call(this, screen, layout);
 		} catch {
@@ -78,30 +86,40 @@ export function install(): string | undefined {
 	});
 
 	// A fourth click selects the whole Markdown block (paragraph, list, table, code block, quote).
-	proto.getClickCount = guard("getClickCount", function (point: Point, word: any) {
+	proto.getClickCount = function (this: any, point: Point, word: any) {
 		const previous = this.lastClick;
 		const count = originals.getClickCount.call(this, point, word);
-		const repeated =
-			previous &&
-			this.lastClick &&
-			this.lastClick.timestamp - previous.timestamp <= 500 &&
-			previous.row === this.lastClick.row &&
-			previous.scrollView === this.lastClick.scrollView;
-		if (count === 1 && repeated && previous.count === 3) this.lastClick.count = 4;
-		else if (count === 2 && previous?.count === 4) this.lastClick.count = 1;
-		return this.lastClick?.count ?? count;
-	});
+		if (settings.mode === "off") return count;
+		try {
+			const repeated =
+				previous &&
+				this.lastClick &&
+				this.lastClick.timestamp - previous.timestamp <= 500 &&
+				previous.row === this.lastClick.row &&
+				previous.scrollView === this.lastClick.scrollView;
+			if (count === 1 && repeated && previous.count === 3) this.lastClick.count = 4;
+			else if (count === 2 && previous?.count === 4) this.lastClick.count = 1;
+			return this.lastClick?.count ?? count;
+		} catch {
+			return count;
+		}
+	};
 
 	proto.handleSelectionMouseEvent = function (this: any, event: any) {
 		const press = !event.release && (event.button & 32) === 0 && (event.button & 3) === 0;
 		if (press) this.__semanticBlock = false;
-		if (press && settings.mode !== "off" && (event.button & 8) !== 0) {
+		if (press && settings.mode !== "off" && (event.button & 8) !== 0 && !this.hasOverlay()) {
 			// Alt+click: select and copy the block under the pointer.
 			try {
 				const scrollView = this.getPrimaryScrollView();
 				const rect = scrollBox(this, scrollView)?.rect;
-				const inside = rect && event.y >= rect.y && event.y < rect.y + rect.height && event.x >= rect.x;
-				const point = inside ? this.getScrollSelectionPoint?.(scrollView, event.x, event.y) : undefined;
+				const inside =
+					rect &&
+					event.y >= rect.y &&
+					event.y < rect.y + rect.height &&
+					event.x >= rect.x &&
+					event.x < rect.x + rect.width;
+				const point = inside ? this.getScrollSelectionPoint(scrollView, event.x, event.y) : undefined;
 				const range = point && unitRange(this, point, "block");
 				if (range) {
 					this.clearTextSelection();
@@ -126,10 +144,10 @@ export function install(): string | undefined {
 	return undefined;
 }
 
-function paintCursor(tui: any, screen: string[]): string[] {
+function paintCursor(tui: any, screen: string[], layout: any): string[] {
 	const cursor = tui.__semanticCursor as Point | undefined;
 	if (!cursor?.scrollView) return screen;
-	const box = scrollBox(tui, cursor.scrollView);
+	const box = scrollBox(tui, cursor.scrollView, layout);
 	if (!box) return screen;
 	const row = box.rect.y + cursor.row - cursor.scrollView.scrollTop;
 	if (row < box.rect.y || row >= box.rect.y + box.rect.height || row >= screen.length) return screen;

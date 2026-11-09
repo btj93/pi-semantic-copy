@@ -1,22 +1,10 @@
 // Keyboard copy mode: a vim-like cursor over the transcript that copies through the same source mapping.
 import { decodeKittyPrintable, isKeyRelease, matchesKey, sliceByColumn, stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
-import type * as smap from "./smap.ts";
+import * as smap from "./smap.ts";
 import { contextOf, mapOf, type Point, type Sel, scrollBox, semanticText, unitRange } from "./screen.ts";
 
-const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const words = new Intl.Segmenter(undefined, { granularity: "word" });
-
-function rowCells(line: string) {
-	const cells: { col: number; w: number; ch: string }[] = [];
-	let col = 0;
-	for (const { segment } of graphemes.segment(stripTerminalSequences(line))) {
-		const w = visibleWidth(segment);
-		if (w <= 0) continue;
-		cells.push({ col, w, ch: segment });
-		col += w;
-	}
-	return cells;
-}
+const rowCells = smap.toCells;
 
 function wordStarts(line: string): number[] {
 	const text = stripTerminalSequences(line);
@@ -169,10 +157,18 @@ export class CopyMode {
 		this.close();
 	}
 
-	private close() {
+	// Pi keeps its viewport keys (PageUp/PageDown) for itself unless the focused component claims them.
+	readonly capturesViewportInput = true;
+
+	/** Pi calls this instead of done() when it tears extension UI down (reload, session switch). */
+	dispose() {
 		this.tui.__semanticCursor = undefined;
 		this.tui.clearTextSelection();
 		this.tui.requestRender();
+	}
+
+	private close() {
+		this.dispose();
 		this.done();
 	}
 
@@ -185,6 +181,14 @@ export class CopyMode {
 	}
 
 	handleInput(data: string) {
+		try {
+			this.handleKey(data);
+		} catch {
+			this.close();
+		}
+	}
+
+	private handleKey(data: string) {
 		if (isKeyRelease(data)) return;
 		const key = decodeKittyPrintable(data) ?? (data.length === 1 && data >= " " ? data : undefined);
 		const sv = this.cursor.scrollView;
@@ -238,10 +242,10 @@ export class CopyMode {
 			if (block) this.moveTo(block.start.row, block.start.col);
 		} else if (key === "v") this.toggle("char");
 		else if (key === "V") this.toggle("line");
-		else if (key === "B" || key === "a") this.toggle("block");
+		else if (key === "B") this.toggle("block");
 		else if (key === "o" && this.anchor) [this.anchor, this.cursor] = [{ ...this.cursor }, { ...this.anchor }];
 		else if (key === "y" || matchesKey(data, "enter")) return this.copy("plain");
-		else if (key === "Y" || key === "m") return this.copy("markdown");
+		else if (key === "Y") return this.copy("markdown");
 		else return;
 		this.sync();
 	}

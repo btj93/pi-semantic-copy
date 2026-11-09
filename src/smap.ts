@@ -51,7 +51,7 @@ const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const BOX = new Set("│─┼├┤┌┐└┘┬┴╭╮╰╯━┃");
 const MAX_EDITS = 1500;
 
-function toCells(line: string): Cell[] {
+export function toCells(line: string): Cell[] {
 	const cells: Cell[] = [];
 	let col = 0;
 	const text = stripTerminalSequences(line);

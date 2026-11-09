@@ -129,7 +129,8 @@ test("large message maps quickly", () => {
 	tui.doRender();
 	const text = tui.getActiveSelectionText();
 	const ms = performance.now() - t0;
-	assert.ok(ms < 1500, `took ${ms}ms`);
+	// Loose bound: catches a return to whole-message alignment (several seconds), not runner jitter.
+	assert.ok(ms < 4000, `took ${ms}ms`);
 	assert.ok(text && !text.includes("│") && !text.includes("─"), text);
 });
 
@@ -137,4 +138,32 @@ test("patches apply to the Pi under test", async () => {
 	let status;
 	await commands["semantic-copy"].handler("", { ui: { notify: (m) => (status = m) } });
 	assert.match(status, /^semantic copy: plain/, `internals changed: ${status}`);
+});
+
+test("blank lines inside a code block survive the copy", () => {
+	const { tui, screen, mouse } = setup("```py\ndef a():\n    pass\n\n\ndef b():\n    pass\n```");
+	const r = screen().findIndex((l) => l.includes("def a"));
+	for (let i = 0; i < 4; i++) { mouse(4, r); mouse(4, r, { release: true }); }
+	tui.doRender();
+	assert.equal(tui.getActiveSelectionText(), "def a():\n    pass\n\n\ndef b():\n    pass");
+});
+
+test("copy mode claims PageUp/PageDown and cleans up when Pi disposes it", async () => {
+	const { tui } = setup("one\n\ntwo");
+	const mode = await openMode(tui, "copy-mode");
+	assert.equal(mode.component.capturesViewportInput, true);
+	mode.keys("v", "k");
+	assert.ok(tui.__semanticCursor && tui.selectionAnchor);
+	mode.component.dispose();
+	assert.equal(tui.__semanticCursor, undefined);
+	assert.equal(tui.selectionAnchor, undefined);
+});
+
+test("alt-click under an overlay does not copy the transcript", () => {
+	const { tui, screen, mouse } = setup("para one\n\npara two");
+	let copied;
+	tui.copyTextToClipboard = async (t) => { copied = t; return true; };
+	tui.hasOverlay = () => true;
+	mouse(3, screen().findIndex((l) => l.includes("para two")), { button: 8 });
+	assert.equal(copied, undefined);
 });

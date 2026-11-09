@@ -32,7 +32,7 @@ export const PATCHED = [
 ] as const;
 const maps = new WeakMap<any, { lines: string[]; map: smap.LeafMap }>();
 
-export function scrollBox(tui: any, scrollView: any): any {
+export function scrollBox(tui: any, scrollView: any, layout = tui.currentLayout): any {
 	const visit = (box: any): any => {
 		if (box.scrollView === scrollView) return box;
 		for (const child of box.children ?? []) {
@@ -40,7 +40,7 @@ export function scrollBox(tui: any, scrollView: any): any {
 			if (hit) return hit;
 		}
 	};
-	return tui.currentLayout?.root ? visit(tui.currentLayout.root) : undefined;
+	return layout?.root ? visit(layout.root) : undefined;
 }
 
 function leavesOf(scrollView: any): Leaf[] {
@@ -87,8 +87,8 @@ export interface Ctx {
 	lines: string[];
 	leaves: Leaf[];
 }
-export function contextOf(tui: any, scrollView: any): Ctx | undefined {
-	const box = scrollBox(tui, scrollView);
+export function contextOf(tui: any, scrollView: any, layout?: any): Ctx | undefined {
+	const box = scrollBox(tui, scrollView, layout);
 	if (!box?.scrollContentLines) return undefined;
 	return { box, lines: box.scrollContentLines, leaves: leavesOf(scrollView) };
 }
@@ -120,10 +120,12 @@ export function semanticText(tui: any, sel: Sel, format: smap.CopyFormat): strin
 		}
 		const line = ctx.lines[row] ?? "";
 		const cols = original(tui, "getSelectionColumns")(line, row, sel);
-		parts.push(stripTerminalSequences(sliceByColumn(line, cols.start, Math.max(0, cols.end - cols.start), true)).trimEnd());
+		const text = stripTerminalSequences(sliceByColumn(line, cols.start, Math.max(0, cols.end - cols.start), true)).trimEnd();
+		// Spacer rows between messages collapse to one blank line; blank lines inside a leaf are content.
+		if (text || parts.at(-1) !== "") parts.push(text);
 		row++;
 	}
-	return parts.join("\n").replace(/\n{3,}/g, "\n\n").replace(/^\n+|\s+$/g, "");
+	return parts.join("\n").replace(/^\n+|\s+$/g, "");
 }
 
 function original(tui: any, name: (typeof PATCHED)[number]) {
