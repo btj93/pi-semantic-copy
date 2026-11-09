@@ -33,7 +33,7 @@
 	},
 	"scripts": {
 		"check": "tsc -p .",
-		"test": "node --test test/"
+		"test": "node --test test/*.test.mjs"
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": "*",
