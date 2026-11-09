@@ -1,0 +1,42 @@
+{
+	"name": "pi-semantic-copy",
+	"version": "0.1.0",
+	"description": "Copy what Pi's fullscreen transcript means, not what it draws: no quote gutters, table borders or hard wraps; block copy and a vim-style copy mode",
+	"type": "module",
+	"license": "Apache-2.0",
+	"author": "Jeffrey Cheung <jeffrey991110@gmail.com>",
+	"keywords": [
+		"pi-package",
+		"pi-extension",
+		"clipboard",
+		"copy",
+		"selection",
+		"tui"
+	],
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		]
+	},
+	"scripts": {
+		"check": "tsc -p .",
+		"test": "node --test test/"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.5.0",
+		"@earendil-works/pi-tui": "1.5.0",
+		"typescript": "^5.9.3"
+	},
+	"engines": {
+		"node": ">=20.6"
+	}
+}
