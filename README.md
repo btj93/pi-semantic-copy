@@ -19,9 +19,8 @@ This extension copies the text the transcript *means* instead. The rendering its
 ## Install
 
 ```bash
-pi install npm:pi-semantic-copy        # once published
-pi install git:github.com/<owner>/pi-semantic-copy
-pi install ./pi-semantic-copy          # local checkout
+pi install npm:pi-semantic-copy   # once published
+pi install ./pi-semantic-copy     # local checkout
 ```
 
 It needs fullscreen mode (`"tuiMode": "fullscreen"`, Pi's default).
@@ -47,7 +46,7 @@ It needs fullscreen mode (`"tuiMode": "fullscreen"`, Pi's default).
 
 | Key | Action |
 |---|---|
-| `j` / `k`, `{` / `}` | Next / previous block |
+| `j` / `k`, `}` / `{` | Next / previous block |
 | `y`, `Enter` | Copy as plain text |
 | `Y` | Copy as Markdown |
 | `v`, `V` | Switch to free selection |
@@ -108,7 +107,8 @@ npm test        # against the pinned Pi devDependency
 PI_PACKAGE_DIR=/path/to/installed/pi-coding-agent npm test   # against another Pi
 ```
 
-CI runs the tests against the pinned Pi and, weekly, against the latest Pi release.
+CI runs the type check and tests against the pinned Pi and against the latest Pi release, on every
+push and weekly.
 
 ## License
 
