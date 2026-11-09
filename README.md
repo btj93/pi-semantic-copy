@@ -19,8 +19,9 @@ This extension copies the text the transcript *means* instead. The rendering its
 ## Install
 
 ```bash
-pi install npm:pi-semantic-copy   # once published
-pi install ./pi-semantic-copy     # local checkout
+pi install npm:pi-semantic-copy                    # once published
+pi install git:github.com/btj93/pi-semantic-copy
+pi install ./pi-semantic-copy                      # local checkout
 ```
 
 It needs fullscreen mode (`"tuiMode": "fullscreen"`, Pi's default).

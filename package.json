@@ -5,6 +5,14 @@
 	"type": "module",
 	"license": "Apache-2.0",
 	"author": "Jeffrey Cheung <jeffrey991110@gmail.com>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/btj93/pi-semantic-copy.git"
+	},
+	"homepage": "https://github.com/btj93/pi-semantic-copy#readme",
+	"bugs": {
+		"url": "https://github.com/btj93/pi-semantic-copy/issues"
+	},
 	"keywords": [
 		"pi-package",
 		"pi-extension",

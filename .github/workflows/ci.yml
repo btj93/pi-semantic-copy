@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
     # Weekly: catch a Pi release that changes the private internals this extension patches.
