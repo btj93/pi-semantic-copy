@@ -37,7 +37,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm install --no-save @earendil-works/pi-coding-agent@${{ matrix.pi }} @earendil-works/pi-tui@${{ matrix.pi }}
+      - run: npm install --save-dev --save-exact @earendil-works/pi-coding-agent@${{ matrix.pi }} @earendil-works/pi-tui@${{ matrix.pi }}
       - run: npm ls @earendil-works/pi-coding-agent @earendil-works/pi-tui
       - run: npm run check
       - run: npm test
