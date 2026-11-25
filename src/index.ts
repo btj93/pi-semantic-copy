@@ -6,13 +6,13 @@ import { CopyMode } from "./copy-mode.ts";
 import { install, settings } from "./patch.ts";
 
 // Keep in step with the pinned devDependency and the CI matrix.
-const TESTED_PI = "1.5.";
+const TESTED_PI = ["1.5", "1.6"];
 
 export default function (pi: ExtensionAPI) {
 	const problem = install();
-	const untested = VERSION.startsWith(TESTED_PI)
+	const untested = TESTED_PI.some((minor) => VERSION.startsWith(`${minor}.`))
 		? undefined
-		: `semantic-copy is tested with Pi ${TESTED_PI}x, this is ${VERSION}. If copies look wrong, run /semantic-copy off.`;
+		: `semantic-copy is tested with Pi ${TESTED_PI.map((minor) => `${minor}.x`).join(" and ")}, this is ${VERSION}. If copies look wrong, run /semantic-copy off.`;
 
 	pi.on("session_start", async (event, ctx) => {
 		if (event.reason !== "startup" || !ctx.hasUI) return;

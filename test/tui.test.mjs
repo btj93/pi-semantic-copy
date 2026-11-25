@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { load, plainTheme, tui } from "./harness.mjs";
+import { load, piVersion, plainTheme, tui } from "./harness.mjs";
 
-const { Container, Markdown, ScrollView, Spacer, TuiAltScreen, VStack, stripTerminalSequences } = tui;
+const { Box, Container, Markdown, ScrollView, Spacer, TuiAltScreen, VStack, stripTerminalSequences } = tui;
 const { default: register } = await load("src/index.ts");
 
 const commands = {};
@@ -11,11 +11,10 @@ register({ registerCommand: (n, o) => (commands[n] = o), registerShortcut() {}, 
 const theme = plainTheme;
 const terminal = new Proxy({ columns: 40, rows: 30 }, { get: (t, k) => (k in t ? t[k] : () => {}) });
 
-function setup(md) {
+function setup(md, message = new Container()) {
 	const tui = new TuiAltScreen(terminal, false);
 	tui.altScreenActive = true;
 	const doc = new Container();
-	const message = new Container();
 	const content = new Container();
 	message.addChild(content);
 	content.addChild(new Spacer(1));
@@ -41,6 +40,17 @@ test("drag over a blockquote copies text without gutters or wraps", () => {
 	const last = rows.at(-1);
 	const text = drag(0, rows[0][1], 39, last[1]);
 	assert.equal(text, "今日は天気が良いので、公園まで散歩に行きました。帰りに本屋に寄って新しい小説を買いました。", screen().join("\n"));
+});
+
+test("drag maps a wrapped quote inside a padded message box", () => {
+	const text = "the first text wraps onto a second row inside the box";
+	const { tui, screen, drag } = setup(`> ${text}`, new Box(3, 1));
+	let copied;
+	tui.copyTextToClipboard = async (value) => { copied = value; return true; };
+	const rows = screen().flatMap((line, row) => line.includes("│") ? [row] : []);
+	assert.ok(rows.length > 1);
+	assert.equal(drag(0, rows[0], 39, rows.at(-1)), text);
+	assert.equal(copied, text);
 });
 
 test("highlight skips the gutter", () => {
@@ -135,9 +145,10 @@ test("large message maps quickly", () => {
 });
 
 test("patches apply to the Pi under test", async () => {
-	let status;
-	await commands["semantic-copy"].handler("", { ui: { notify: (m) => (status = m) } });
+	let status, level;
+	await commands["semantic-copy"].handler("", { ui: { notify: (m, l) => { status = m; level = l; } } });
 	assert.match(status, /^semantic copy: plain/, `internals changed: ${status}`);
+	if (/^1\.[56]\./.test(piVersion)) assert.equal(level, "info", status);
 });
 
 test("blank lines inside a code block survive the copy", () => {

@@ -1,7 +1,7 @@
 # pi-semantic-copy
 
 > **Experimental.** This extension patches private internals of Pi's fullscreen mode. It is tested with
-> **Pi 1.5.x** only. On other versions it warns at startup, and it switches itself off if the methods it
+> **Pi 1.5.x and 1.6.x**. On other versions it warns at startup, and it switches itself off if the methods it
 > patches are missing.
 
 Pi's fullscreen transcript copies exactly what it draws, so a mouse selection picks up blockquote
@@ -19,7 +19,7 @@ This extension copies the text the transcript *means* instead. The rendering its
 ## Install
 
 ```bash
-pi install git:github.com/btj93/pi-semantic-copy@v0.1.0
+pi install git:github.com/btj93/pi-semantic-copy
 pi install ./pi-semantic-copy                     # local checkout
 ```
 

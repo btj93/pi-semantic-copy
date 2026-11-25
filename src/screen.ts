@@ -1,5 +1,5 @@
 // Bridge between TuiAltScreen's private layout/selection state and the pure source mapping in smap.ts.
-import { Box, Markdown, sliceByColumn, stripTerminalSequences, Text, TuiAltScreen } from "@earendil-works/pi-tui";
+import { Box, type Component, Markdown, sliceByColumn, stripTerminalSequences, Text, TuiAltScreen } from "@earendil-works/pi-tui";
 import * as smap from "./smap.ts";
 
 export type Mode = smap.CopyFormat | "off";
@@ -47,20 +47,30 @@ function leavesOf(scrollView: any): Leaf[] {
 	const out: Leaf[] = [];
 	const walk = (node: any, row: number, x: number, width: number, height: number) => {
 		if (node instanceof Markdown || node instanceof Text) {
-			out.push({ node, row0: row, rows: height, x0: x, width });
+			if (height > 0) out.push({ node, row0: row, rows: height, x0: x, width });
 			return;
 		}
-		const layout = node?.mouseLayout;
+		// Pi 1.6 caches each child's rendered lines instead of recording its height in mouseLayout.
+		const layout: { width: number } & (
+			| { children: readonly Component[]; parts: readonly (readonly string[])[] }
+			| { children: readonly { component: Component; height: number }[] }
+		) | undefined = node?.childLines ?? node?.mouseLayout;
 		if (!Array.isArray(layout?.children)) return;
 		const box = node instanceof Box;
 		let y = row + (box ? (node as any).paddingY : 0);
-		for (const child of layout.children) {
-			walk(child.component, y, x + (box ? (node as any).paddingX : 0), layout.width, child.height);
-			y += child.height;
+		const childX = x + (box ? (node as any).paddingX : 0);
+		const visit = (child: Component, height: number) => {
+			walk(child, y, childX, layout.width, height);
+			y += height;
+		};
+		if ("parts" in layout) {
+			layout.children.forEach((child, i) => visit(child, layout.parts[i].length));
+		} else {
+			for (const child of layout.children) visit(child.component, child.height);
 		}
 	};
-	const root = scrollView?.child;
-	if (root?.mouseLayout) walk(root, 0, 0, root.mouseLayout.width, Number.MAX_SAFE_INTEGER);
+	// The scroll root is a container; each leaf gets its width and height from its parent.
+	walk(scrollView?.child, 0, 0, 0, 0);
 	return out;
 }
 
